@@ -15,6 +15,7 @@ class CFEditor:
         self.cursor_y = 0
         self.cursor_x = 0
         self.top_line = 0
+        self.left_margin = 0
 
         self.search_query = ""
         self.search_results = []
@@ -38,28 +39,41 @@ class CFEditor:
         with open(file=self.filename, mode="w", encoding="UTF-8") as file:
             file.write("\n".join(self.content))
 
+    def adjust_view(self):
+        height, width = self.stdscr.getmaxyx()
+        if self.cursor_y < self.top_line:
+            self.top_line = self.cursor_y
+        elif self.cursor_y >= self.top_line + height - 2:
+            self.top_line = self.cursor_y - height + 3
+
+        effective_width = width - (8 if self.show_line_numbers else 0)
+        if self.cursor_x < self.left_margin:
+            self.left_margin = max(0, self.cursor_x - 5)
+        elif self.cursor_x >= self.left_margin + effective_width:
+            self.left_margin = self.cursor_x - effective_width + 5
+
     def display(self):
         self.stdscr.clear()
         height, width = self.stdscr.getmaxyx()
 
-        display_content = self.content
-
-        for i, line in enumerate(display_content[self.top_line:self.top_line+height-1]):
+        for i, line in enumerate(self.content[self.top_line:self.top_line+height-1]):
             if i == height - 1:
                 break
             if self.show_line_numbers:
                 line_num = str(self.top_line + i + 1).rjust(4)
                 self.stdscr.addstr(i, 0, line_num, curses.color_pair(1))
                 self.stdscr.addstr(i, 5, "│ ")
-                self.stdscr.addstr(i, 7, line[:width-8])
+                visible_line = line[self.left_margin:self.left_margin+width-8]
+                self.stdscr.addstr(i, 7, visible_line)
             else:
-                self.stdscr.addstr(i, 0, line[:width])
+                visible_line = line[self.left_margin:self.left_margin+width]
+                self.stdscr.addstr(i, 0, visible_line)
 
         status = f"CFE | File: {self.filename} | Pos: {self.cursor_y+1}:{self.cursor_x+1} | ^S: save | ^F: find | ^L: line numbers | ^Z: undo | ^Y: redo | ^Q: quit"
         self.stdscr.addstr(height-1, 0, status[:width-1], curses.A_REVERSE)
 
         cursor_y = self.cursor_y - self.top_line
-        cursor_x = self.cursor_x + (7 if self.show_line_numbers else 0)
+        cursor_x = self.cursor_x - self.left_margin + (7 if self.show_line_numbers else 0)
         self.stdscr.move(cursor_y, cursor_x)
         self.stdscr.refresh()
 
@@ -125,19 +139,21 @@ class CFEditor:
             self.content.pop(self.cursor_y+1)
         self.undo_redo.add_state(self.content)
 
-    def move_cursor_left(self):
-        if self.cursor_x > 0:
-            self.cursor_x -= 1
-        elif self.cursor_y > 0:
-            self.cursor_y -= 1
-            self.cursor_x = len(self.content[self.cursor_y])
-
     def move_cursor_right(self):
         if self.cursor_x < len(self.content[self.cursor_y]):
             self.cursor_x += 1
         elif self.cursor_y < len(self.content) - 1:
             self.cursor_y += 1
             self.cursor_x = 0
+        self.adjust_view()
+
+    def move_cursor_left(self):
+        if self.cursor_x > 0:
+            self.cursor_x -= 1
+        elif self.cursor_y > 0:
+            self.cursor_y -= 1
+            self.cursor_x = len(self.content[self.cursor_y])
+        self.adjust_view()
 
     def move_cursor_up(self):
         if self.cursor_y > 0:
@@ -153,13 +169,6 @@ class CFEditor:
         self.content[self.cursor_y] = self.content[self.cursor_y][:self.cursor_x] + char + self.content[self.cursor_y][self.cursor_x:]
         self.cursor_x += 1
         self.undo_redo.add_state(self.content)
-
-    def adjust_view(self):
-        height, _ = self.stdscr.getmaxyx()
-        if self.cursor_y < self.top_line:
-            self.top_line = self.cursor_y
-        elif self.cursor_y >= self.top_line + height - 2:
-            self.top_line = self.cursor_y - height + 3
 
     def search(self):
         height, width = self.stdscr.getmaxyx()
