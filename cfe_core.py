@@ -94,7 +94,7 @@ class CFEditor:
         return highlighted
 
     def auto_complete(self):
-        current_word = re.findall(r'\w+$', self.content[self.cursor_y][:self.cursor_x])
+        current_word = re.findall(r"\w+$", self.content[self.cursor_y][:self.cursor_x])
         if current_word:
             current_word = current_word[0]
             suggestions = [kw for kw in keyword.kwlist if kw.startswith(current_word)]
