@@ -1,5 +1,5 @@
 from config import CFEConfiguration
-from utils import UndoRedo
+from utils import UndoRedo, tokenize_line
 
 import curses
 import os
@@ -56,42 +56,37 @@ class CFEditor:
         self.stdscr.clear()
         height, width = self.stdscr.getmaxyx()
 
-        for i, line in enumerate(self.content[self.top_line:self.top_line+height-1]):
-            if i == height - 1:
+        for y, line in enumerate(self.content[self.top_line:self.top_line + height - 1]):
+            if y == height - 1:
                 break
             if self.show_line_numbers:
-                line_num = str(self.top_line + i + 1).rjust(4)
-                self.stdscr.addstr(i, 0, line_num, curses.color_pair(1))
-                self.stdscr.addstr(i, 5, "│ ")
-                visible_line = line[self.left_margin:self.left_margin+width-8]
-                self.stdscr.addstr(i, 7, visible_line)
+                line_num = str(self.top_line + y + 1).rjust(4)
+                self.stdscr.addstr(y, 0, line_num, curses.color_pair(1))
+                self.stdscr.addstr(y, 5, "│ ")
+                start_x = 7
+                max_width = width - 8
             else:
-                visible_line = line[self.left_margin:self.left_margin+width]
-                self.stdscr.addstr(i, 0, visible_line)
+                start_x = 0
+                max_width = width
 
-        status = f"CFE | File: {self.filename} | Pos: {self.cursor_y+1}:{self.cursor_x+1} | ^S: save | ^F: find | ^L: line numbers | ^Z: undo | ^Y: redo | ^Q: quit"
-        self.stdscr.addstr(height-1, 0, status[:width-1], curses.A_REVERSE)
+            visible_line = line[self.left_margin:self.left_margin + max_width]
+
+            tokens = tokenize_line(visible_line)
+            current_x = start_x
+            for token, token_type in tokens:
+                try:
+                    self.stdscr.addstr(y, current_x, token, curses.color_pair(self.config.SYNTAX_LIGHTING_COLORS[token_type]))
+                except KeyError:
+                    self.stdscr.addstr(y, current_x, token)
+                current_x += len(token)
+
+        status = f"CFE | File: {self.filename} | Pos: {self.cursor_y + 1}:{self.cursor_x + 1} | ^S: save | ^Q: quit | ^L: line numbers | ^F: find | ^Z: undo | ^Y: redo"
+        self.stdscr.addstr(height - 1, 0, status[:width - 1], curses.A_REVERSE)
 
         cursor_y = self.cursor_y - self.top_line
         cursor_x = self.cursor_x - self.left_margin + (7 if self.show_line_numbers else 0)
         self.stdscr.move(cursor_y, cursor_x)
         self.stdscr.refresh()
-
-    @staticmethod
-    def syntax_highlight(line):
-        keywords = set(keyword.kwlist)
-        tokens = re.findall(r"\b\w+\b|[^\w\s]", line)
-        highlighted = ""
-        for token in tokens:
-            if token in keywords:
-                highlighted += f"\033[1;35m{token}\033[0m"
-            elif token.isdigit():
-                highlighted += f"\033[1;36m{token}\033[0m"
-            elif token in "()[]{}":
-                highlighted += f"\033[1;33m{token}\033[0m"
-            else:
-                highlighted += token
-        return highlighted
 
     def auto_complete(self):
         current_word = re.findall(r"\w+$", self.content[self.cursor_y][:self.cursor_x])

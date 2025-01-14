@@ -9,13 +9,13 @@ def display_menu(stdscr):
     stdscr.clear()
     height, width = stdscr.getmaxyx()
 
-    menu_title = "  CFEditor Menu"
-    menu_items = ["Create a new file", "Exit"]
+    menu_title = "CFEditor Menu"
+    menu_items = ["Open file", "Exit"]
     current_row = 0
 
     while True:
         stdscr.clear()
-        stdscr.addstr(0, 0, menu_title, curses.A_BOLD)
+        stdscr.addstr(0, 2, menu_title, curses.A_REVERSE)
 
 
         for idx, item in enumerate(menu_items):
@@ -28,11 +28,11 @@ def display_menu(stdscr):
             else:
                 stdscr.addstr(y, x, item)
 
-        content = "Welcome in Console File Editor!\nTo immediately open file editing you can use the arg <filename>\n\nLink on main github repository:\nhttps://github.com/mk-samoilov/Console-File-Editor"
+        content = "Welcome in Console File Editor!\n\nTo immediately open file editing you can use the arg <filename>\n(if the file is not found it will be created)\n\nLink on main github repository:\nhttps://github.com/mk-samoilov/Console-File-Editor"
 
         content_lines = content.split("\n")
         for idx, line in enumerate(content_lines):
-            stdscr.addstr(2 + idx, width // 4 + 2, line)
+            stdscr.addstr(1 + idx, width // 4 + 2, line)
 
         stdscr.refresh()
 
@@ -43,17 +43,18 @@ def display_menu(stdscr):
             current_row += 1
         elif key == curses.KEY_ENTER or key in [10, 13]:
             if current_row == 0:
-                return create_new_file(stdscr)
+                return open_file(stdscr)
             else:
                 return None
 
 
-def create_new_file(stdscr):
+def open_file(stdscr):
     curses.echo()
     stdscr.clear()
     height, width = stdscr.getmaxyx()
-    prompt = "Enter the name of the new file: "
+    prompt = "Enter the filename (if the file is not found it will be created):"
     stdscr.addstr(height // 2, (width - len(prompt)) // 2, prompt)
+    stdscr.addstr(height // 2 + 1, width // 3, "")
     filename = stdscr.getstr().decode("utf-8")
     curses.noecho()
     return filename
