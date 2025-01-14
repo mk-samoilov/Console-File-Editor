@@ -17,8 +17,16 @@ class CFEConfiguration:
                 curses.KEY_DOWN: self.core.move_cursor_down         # Move Down
             }
 
+        self.COLOR_PAIRS = \
+            [
+                {"pair-code": 1, "text": curses.COLOR_BLUE, "background": curses.COLOR_BLACK},
+                {"pair-code": 2, "text": curses.COLOR_GREEN, "background": curses.COLOR_BLACK},
+                {"pair-code": 3, "text": curses.COLOR_YELLOW, "background": curses.COLOR_BLACK},
+                {"pair-code": 4, "text": curses.COLOR_CYAN, "background": curses.COLOR_BLACK}
+            ]
+
         self.SYNTAX_LIGHTING_COLORS = \
-            {
+            { # (By pair-code)
                 "KEYWORD": 3,
                 "STRING": 2,
                 "NUMBER": 4

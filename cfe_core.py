@@ -9,6 +9,8 @@ import re
 class CFEditor:
     def __init__(self, stdscr, filename: str):
         self.stdscr = stdscr
+        curses.start_color()
+
         self.filename = filename
         self.content = []
 
@@ -25,6 +27,9 @@ class CFEditor:
 
         self.undo_redo = UndoRedo()
         self.config = CFEConfiguration(core_class_instance=self)
+
+        for pair in self.config.COLOR_PAIRS:
+            curses.init_pair(pair["pair-code"], pair["text"], pair["background"])
 
     def load_file(self):
         if os.path.exists(self.filename):
