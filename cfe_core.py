@@ -103,13 +103,11 @@ class CFEditor:
                 self.insert_char(completion)
 
     def handle_input(self, key):
-        if 32 <= key <= 128:
-            self.insert_char(chr(key))
-        else:
-            try:
-                self.config.KEYS_BIND[key]()
-            except KeyError:
-                pass
+        try:
+            self.config.KEYS_BIND[key]()
+        except KeyError:
+            if 32 <= key:
+                self.insert_char(chr(key))
 
         self.adjust_view()
 
